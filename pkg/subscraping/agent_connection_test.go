@@ -129,6 +129,18 @@ func TestSessionConnectionReuse(t *testing.T) {
 	}
 }
 
+func TestSessionCloneHasIndependentClient(t *testing.T) {
+	session, _ := newConnectionTestSession(t)
+	clone := session.Clone()
+	require.NotSame(t, session, clone)
+	require.NotSame(t, session.Client, clone.Client)
+	require.Equal(t, session.Client.Transport, clone.Client.Transport)
+	require.Equal(t, session.Client.Timeout, clone.Client.Timeout)
+	require.Same(t, session.MultiRateLimiter, clone.MultiRateLimiter)
+	require.Equal(t, session.Extractor, clone.Extractor)
+	require.Nil(t, (*Session)(nil).Clone())
+}
+
 func TestSessionIdleConnectionLifecycle(t *testing.T) {
 	closed := make(chan struct{})
 	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

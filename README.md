@@ -43,6 +43,7 @@ hunters alike.
 - **Curated** passive sources to maximize results
 - Multiple output formats supported (JSON, file, stdout)
 - Optimized for speed and **lightweight** on resources
+- Automatic source recovery: failed sources get one retry, while slow sources are queried in parallel before their timeout so transient failures do not silently drop results
 - **STDIN/OUT** support enables easy integration into workflows
 
 # Usage

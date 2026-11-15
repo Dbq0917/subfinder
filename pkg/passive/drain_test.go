@@ -3,6 +3,7 @@ package passive
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -14,14 +15,19 @@ import (
 // been received, so if the engine abandons the channel on cancel instead of
 // draining it, the goroutine leaks and exited is never closed.
 type blockingSource struct {
-	exited chan struct{}
+	exited     chan struct{}
+	exitedOnce sync.Once
 }
 
 func (s *blockingSource) Run(_ context.Context, _ string, _ *subscraping.Session) <-chan subscraping.Result {
 	ch := make(chan subscraping.Result)
 	go func() {
 		defer close(ch)
-		defer close(s.exited)
+		defer func() {
+			if s.exited != nil {
+				s.exitedOnce.Do(func() { close(s.exited) })
+			}
+		}()
 		for i := 0; i < 100; i++ {
 			ch <- subscraping.Result{Source: s.Name(), Type: subscraping.Subdomain, Value: "a.example.com"}
 		}

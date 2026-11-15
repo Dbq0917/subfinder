@@ -85,6 +85,27 @@ func NewSession(domain string, proxy string, multiRateLimiter *ratelimit.MultiLi
 	return session, err
 }
 
+// Clone returns a session that can run concurrently with the original one.
+// The HTTP client is independent so sources that customize their client do not
+// race with another attempt, while the shared rate limiter, extractor and
+// request limits remain the same. The clone borrows the multi-rate limiter and
+// therefore must not be closed independently.
+func (s *Session) Clone() *Session {
+	if s == nil {
+		return nil
+	}
+	cloned := *s
+	if s.Client != nil {
+		cloned.Client = &http.Client{
+			Transport:     s.Client.Transport,
+			CheckRedirect: s.Client.CheckRedirect,
+			Jar:           s.Client.Jar,
+			Timeout:       s.Client.Timeout,
+		}
+	}
+	return &cloned
+}
+
 // Get makes a GET request to a URL with extended parameters
 func (s *Session) Get(ctx context.Context, getURL, cookies string, headers map[string]string) (*http.Response, error) {
 	return s.HTTPRequest(ctx, http.MethodGet, getURL, cookies, headers, nil, BasicAuth{})
